@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hacker Tracker — Scanner</title>
+  <meta name="description" content="QR code check-in scanner for hackathon attendees." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────── -->
+<header class="site-header">
+  <a href="/" class="logo">🎯 <span>Hacker</span>Tracker</a>
+  <nav class="nav-links">
+    <a href="/" class="active" id="nav-scanner">Scanner</a>
+    <a href="/admin.html" id="nav-admin">Admin</a>
+  </nav>
+</header>
+
+<main class="page-container">
+  <div class="page-hero">
+    <h1>Check-In Scanner</h1>
+    <p>Point a hacker's QR code at the camera to check them in.</p>
+  </div>
+
+  <!-- Status Banner -->
+  <div class="status-banner" id="status-banner" role="alert">
+    <div class="status-icon" id="status-icon"></div>
+    <div>
+      <div class="status-title" id="status-title"></div>
+      <div class="status-sub"  id="status-sub"></div>
+    </div>
+  </div>
+
+  <!-- Main layout: scanner + feed side by side on wide screens -->
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; align-items: start;">
+
+    <!-- Scanner card -->
+    <div class="card" style="padding:1.25rem;">
+      <div class="section-header">
+        <h2>Camera</h2>
+        <span id="scan-status-pill" class="badge badge-muted">● Idle</span>
+      </div>
+
+      <div class="scanner-wrap" id="scanner-wrap">
+        <video id="video" playsinline autoplay muted></video>
+        <div class="scanner-overlay">
+          <div class="scan-reticle"></div>
+          <div class="scan-line" id="scan-line"></div>
+        </div>
+      </div>
+
+      <canvas id="canvas" style="display:none;"></canvas>
+
+      <div class="scanner-controls">
+        <button class="btn btn-primary" id="btn-start">▶ Start Camera</button>
+        <button class="btn btn-ghost"   id="btn-stop" disabled>■ Stop</button>
+      </div>
+
+      <!-- Manual entry fallback -->
+      <details style="margin-top:1.25rem;">
+        <summary style="cursor:pointer; font-size:0.85rem; color:var(--text-secondary); user-select:none;">
+          ⌨️ Manual UUID entry (fallback)
+        </summary>
+        <div class="manual-input-wrap" style="margin-top:0.6rem;">
+          <input type="text" id="manual-uuid" placeholder="Paste UUID here…" autocomplete="off" spellcheck="false" />
+          <button class="btn btn-primary" id="btn-manual-checkin">Check In</button>
+        </div>
+      </details>
+    </div>
+
+    <!-- Recent check-ins feed -->
+    <div class="card section" style="padding:1.25rem;">
+      <div class="section-header">
+        <h2>Recent Check-Ins</h2>
+        <span id="checkin-count" class="badge badge-green">0</span>
+      </div>
+
+      <ul class="feed-list" id="feed-list">
+        <li class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>No check-ins yet</p>
+        </li>
+      </ul>
+    </div>
+
+  </div><!-- /grid -->
+</main>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- jsQR from CDN (no build step needed) -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hacker Tracker — Admin</title>
+    <meta name="description" content="Admin panel for managing hackathon attendees and check-in data." />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <!-- ── Header ──────────────────────────────────────────── -->
+    <header class="site-header">
+        <a href="/" class="logo">🎯 <span>Hacker</span>Tracker</a>
+        <nav class="nav-links">
+            <a href="/" id="nav-scanner">Scanner</a>
+            <a href="/admin.html" class="active" id="nav-admin">Admin</a>
+        </nav>
+    </header>
+
+    <main class="page-container">
+        <div class="page-hero">
+            <h1>Admin Dashboard</h1>
+            <p>Manage attendees, view check-in stats, and export data.</p>
+        </div>
+
+        <!-- Stats row -->
+        <div class="stats-row" id="stats-row">
+            <div class="stat-pill blue">
+                <div class="pill-value" id="stat-total">—</div>
+                <div class="pill-label">Registered</div>
+            </div>
+            <div class="stat-pill green">
+                <div class="pill-value" id="stat-checkedin">—</div>
+                <div class="pill-label">Checked In</div>
+            </div>
+            <div class="stat-pill yellow">
+                <div class="pill-value" id="stat-remaining">—</div>
+                <div class="pill-label">Not Yet Here</div>
+            </div>
+        </div>
+
+        <!-- Hacker List -->
+        <div class="section card">
+            <div class="section-header">
+                <h2>Attendees</h2>
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="btn btn-ghost" id="btn-export-csv">⬇ Export CSV</button>
+                    <button class="btn btn-primary" id="btn-open-add">+ Add Hacker</button>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div style="margin-bottom:1rem;">
+                <input type="text" id="search-input" placeholder="🔍  Search by name, email, or UUID…"
+                    style="max-width:400px;" />
+            </div>
+
+            <div class="table-wrap">
+                <table id="hacker-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>UUID</th>
+                            <th>Status</th>
+                            <th>Check-In Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hacker-tbody">
+                        <tr>
+                            <td colspan="5" class="empty-state" style="padding:2rem;">
+                                <div class="empty-icon">⏳</div>Loading…
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── Add Hacker Modal ───────────────────────────────── -->
+    <div class="modal-backdrop" id="add-modal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-header">
+                <h2 id="modal-title">Add Hacker</h2>
+                <button class="modal-close" id="btn-close-modal" aria-label="Close">✕</button>
+            </div>
+
+            <form id="add-hacker-form">
+                <div class="form-group">
+                    <label for="input-name">Name *</label>
+                    <input type="text" id="input-name" required placeholder="Full name" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                    <label for="input-email">Email</label>
+                    <input type="email" id="input-email" placeholder="hacker@example.com" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                    <label for="input-uuid">UUID <span style="color:var(--text-muted);font-weight:400;">(auto-generated
+                            if blank)</span></label>
+                    <input type="text" id="input-uuid" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        autocomplete="off" spellcheck="false" />
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" id="btn-cancel-add">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-add">Add Hacker</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container"></div>
+
+    <script src="admin.js"></script>
+</body>
+
+</html>
