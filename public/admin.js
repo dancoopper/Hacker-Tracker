@@ -31,7 +31,7 @@ async function loadHackers() {
 
 function renderTable(data) {
     if (!data.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="empty-state" style="padding:2rem;"><div class="empty-icon">👤</div>No hackers registered yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="padding:2rem;"><div class="empty-icon">👤</div>No hackers registered yet.</td></tr>`;
         return;
     }
 
@@ -41,6 +41,9 @@ function renderTable(data) {
             : `<span class="badge badge-muted">○ Not yet</span>`;
         const timeStr = h.checkinTime ? new Date(h.checkinTime).toLocaleTimeString() : '—';
         const emailStr = h.email ? escHtml(h.email) : '<span style="color:var(--text-muted)">—</span>';
+        const actions = h.checkedIn
+            ? `<button class="btn btn-ghost btn-undo-checkin" data-uuid="${escHtml(h.uuid)}" data-name="${escHtml(h.name)}" style="padding:0.3rem 0.7rem;font-size:0.78rem;">↩ Undo</button>`
+            : `<span style="color:var(--text-muted);font-size:0.8rem;">—</span>`;
 
         return `
       <tr>
@@ -49,6 +52,7 @@ function renderTable(data) {
         <td class="mono" style="font-size:0.78rem;color:var(--text-muted);">${escHtml(h.uuid)}</td>
         <td>${badge}</td>
         <td style="color:var(--text-secondary);">${timeStr}</td>
+        <td>${actions}</td>
       </tr>
     `;
     }).join('');
@@ -120,6 +124,32 @@ addForm.addEventListener('submit', async e => {
         btn.disabled = false;
         btn.textContent = 'Add Hacker';
     }
+});
+
+// ── Un-check-in ──────────────────────────────────────────────────────────────
+async function uncheckin(uuid, name) {
+    try {
+        const res = await fetch(`${API}/api/checkins/${encodeURIComponent(uuid)}`, {
+            method: 'DELETE',
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            showToast('Error: ' + (data.error || 'Unknown'), 'error');
+        } else {
+            showToast(`Undid check-in for ${name}`, 'success');
+            await loadHackers();
+        }
+    } catch (err) {
+        showToast('Network error: ' + err.message, 'error');
+    }
+}
+
+// Delegated click handler for undo buttons rendered inside the table
+tbody.addEventListener('click', e => {
+    const btn = e.target.closest('.btn-undo-checkin');
+    if (!btn) return;
+    const { uuid, name } = btn.dataset;
+    if (confirm(`Remove check-in for ${name}?`)) uncheckin(uuid, name);
 });
 
 // ── CSV Export ────────────────────────────────────────────────────────────────

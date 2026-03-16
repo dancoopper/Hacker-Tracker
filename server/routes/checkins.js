@@ -48,4 +48,17 @@ router.get('/', (req, res) => {
     res.json(checkinStore.getAll());
 });
 
+/**
+ * DELETE /api/checkins/:uuid
+ * Remove a check-in (undo). Returns the removed record or 404.
+ */
+router.delete('/:uuid', (req, res) => {
+    const uuid = req.params.uuid.trim();
+    const removed = checkinStore.removeByUUID(uuid);
+    if (!removed) {
+        return res.status(404).json({ error: 'No check-in found for that UUID' });
+    }
+    return res.json({ status: 'removed', checkin: removed });
+});
+
 module.exports = router;

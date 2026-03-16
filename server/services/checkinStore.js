@@ -45,4 +45,17 @@ function add(event) {
     return record;
 }
 
-module.exports = { getAll, findByUUID, add };
+/**
+ * Remove a check-in by UUID (undo check-in).
+ * Returns the removed record, or null if no matching check-in existed.
+ */
+function removeByUUID(uuid) {
+    const checkins = read();
+    const idx = checkins.findIndex(c => c.uuid === uuid);
+    if (idx === -1) return null;
+    const [removed] = checkins.splice(idx, 1);
+    write(checkins);
+    return removed;
+}
+
+module.exports = { getAll, findByUUID, add, removeByUUID };
