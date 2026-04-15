@@ -12,21 +12,38 @@ const checkinStore = require('../services/checkinStore');
 
 /**
  * GET /api/hackers
- * Returns all hackers, with a `checkedIn` boolean and `checkinTime` for each.
+ * Returns all hackers enriched with their meal check-in records.
+ * Each hacker gains:
+ *   checkedIn  — true if they have at least one meal check-in
+ *   checkinTime — timestamp of their first check-in (backward compat)
+ *   meals       — array of { mealType, timestamp } for every meal they attended
  */
 router.get('/', (req, res) => {
-    const hackers = hackerStore.getAll();
-    const checkins = checkinStore.getAll();
-    const checkinMap = new Map(checkins.map(c => [c.uuid, c]));
+    const hackers  = hackerStore.getAll();
+    const checkins = checkinStore.getAll();          // newest-first
 
-    const enriched = hackers.map(h => ({
-        ...h,
-        checkedIn: checkinMap.has(h.uuid),
-        checkinTime: checkinMap.get(h.uuid)?.timestamp ?? null,
-    }));
+    // Group all check-in records by UUID
+    const mealsByUUID = new Map();
+    checkins.forEach(c => {
+        if (!mealsByUUID.has(c.uuid)) mealsByUUID.set(c.uuid, []);
+        mealsByUUID.get(c.uuid).push({ mealType: c.mealType, timestamp: c.timestamp });
+    });
+
+    const enriched = hackers.map(h => {
+        const meals = mealsByUUID.get(h.uuid) ?? [];
+        // Sort meals oldest-first for display
+        meals.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        return {
+            ...h,
+            meals,
+            checkedIn:   meals.length > 0,
+            checkinTime: meals[0]?.timestamp ?? null,   // first meal time
+        };
+    });
 
     res.json(enriched);
 });
+
 
 /**
  * POST /api/hackers
