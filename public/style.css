@@ -1073,6 +1073,34 @@ tbody td {
   }
 }
 
+/* ── All-meals-done message ──────────────────────────────── */
+.meal-all-done {
+  text-align: center;
+  padding: 1.5rem 0 0.5rem;
+  color: var(--accent-green);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* ── Registration link button (bottom of meal modal) ─────── */
+.meal-reg-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+  width: 100%;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-color: var(--border);
+  text-decoration: none;
+}
+
+.meal-reg-link:hover {
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
 /* ── Meal picker mobile adjustments ─────────────────────── */
 @media (max-width: 700px) {
   .meal-modal {

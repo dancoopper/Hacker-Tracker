@@ -66,10 +66,10 @@
         <!-- Manual entry fallback -->
         <details class="manual-details">
           <summary class="manual-summary">
-            ⌨️ Manual UUID entry (fallback)
+            ⌨️ Manual ID / URL entry (fallback)
           </summary>
           <div class="manual-input-wrap">
-            <input type="text" id="manual-uuid" placeholder="Paste UUID here…" autocomplete="off" spellcheck="false" />
+            <input type="text" id="manual-uuid" placeholder="Paste ID or full MLH URL…" autocomplete="off" spellcheck="false" />
             <button class="btn btn-primary" id="btn-manual-checkin">Check In</button>
           </div>
         </details>
@@ -109,6 +109,15 @@
       <p class="meal-modal-hint">Which meal is this hacker checking in for?</p>
       <!-- Buttons are injected here by app.js from /api/meal-types -->
       <div class="meal-btn-grid" id="meal-btn-grid"></div>
+      <!-- Registration link — shown only when a full URL was scanned -->
+      <a id="meal-modal-reg-link"
+         class="btn btn-ghost meal-reg-link"
+         href="#"
+         target="_blank"
+         rel="noopener noreferrer"
+         style="display:none;">
+        🔗 View Registration
+      </a>
     </div>
   </div>
 

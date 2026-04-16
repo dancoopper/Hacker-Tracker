@@ -1,6 +1,10 @@
 /**
  * app.js — Scanner page logic
  * Handles camera access, jsQR decoding, meal picker, and check-in API calls.
+ *
+ * QR codes now encode full MLH registration URLs, e.g.:
+ *   https://organize.mlh.io/events/13953-huskyhack-2026/registrations/1036925
+ * The registration ID is the last path segment (7 digits).
  */
 
 const API = '';  // same-origin; change to 'http://localhost:3000' if serving separately
@@ -112,30 +116,75 @@ function scanFrame() {
     if (stream) rafId = requestAnimationFrame(scanFrame);
 }
 
+// ── URL → Registration ID extractor ─────────────────────────────────────────
+/**
+ * Accepts either a bare registration ID (e.g. "1036925") or a full MLH URL
+ * (e.g. "https://organize.mlh.io/.../registrations/1036925") and returns
+ * just the numeric ID string. Returns the original value unchanged if it
+ * doesn't look like an MLH URL.
+ */
+function extractRegistrationId(raw) {
+    try {
+        // If it looks like a URL, pull the last non-empty path segment
+        if (raw.startsWith('http://') || raw.startsWith('https://')) {
+            const url = new URL(raw);
+            const segments = url.pathname.split('/').filter(Boolean);
+            return segments[segments.length - 1] ?? raw;
+        }
+    } catch (_) { /* not a valid URL — fall through */ }
+    return raw;
+}
+
 // ── Scan Handler — shows meal picker instead of immediately checking in ───────
-function handleScan(uuid) {
-    if (!uuid) return;
+function handleScan(rawData) {
+    if (!rawData) return;
     scanCooldown = true;
     setScanStatus('processing');
 
+    const id     = extractRegistrationId(rawData);
+    const rawUrl = rawData.startsWith('http') ? rawData : null;
+
     // Look up hacker in local cache for instant name display in picker
-    const hacker = hackersCache.find(h => h.uuid === uuid) ?? null;
+    const hacker = hackersCache.find(h => h.uuid === id) ?? null;
 
     if (!hacker) {
-        showBanner('unknown', '❌ Unknown Hacker', `UUID not found: ${uuid.slice(0, 8)}…`);
+        showBanner('unknown', '❌ Unknown Hacker', `ID not found: ${id}`);
         setTimeout(() => { scanCooldown = false; setScanStatus(stream ? 'scanning' : 'idle'); }, 3000);
         return;
     }
 
-    openMealPicker(uuid, hacker.name);
+    // Meals already completed by this hacker (from cache)
+    const doneIds = (hacker.meals ?? []).map(m => m.mealType);
+    openMealPicker(id, hacker.name, doneIds, rawUrl);
 }
 
 // ── Meal Picker ───────────────────────────────────────────────────────────────
-let pendingUUID = null;
+let pendingUUID   = null;
+let pendingRawUrl = null;   // original scanned URL (for the "View Registration" link)
 
-function openMealPicker(uuid, name) {
-    pendingUUID = uuid;
+/**
+ * @param {string} uuid        - registration ID
+ * @param {string} name        - hacker display name
+ * @param {string[]} doneIds   - meal IDs already checked in for this hacker
+ * @param {string|null} rawUrl - original QR URL (null if entered manually without URL)
+ */
+function openMealPicker(uuid, name, doneIds = [], rawUrl = null) {
+    pendingUUID   = uuid;
+    pendingRawUrl = rawUrl;
     document.getElementById('meal-modal-name').textContent = name;
+
+    // Wire (or update) the registration link button
+    const regLink = document.getElementById('meal-modal-reg-link');
+    if (rawUrl && rawUrl.startsWith('http')) {
+        regLink.href        = rawUrl;
+        regLink.style.display = '';
+    } else {
+        regLink.style.display = 'none';
+    }
+
+    // Rebuild meal buttons filtering out already-done meals
+    buildMealButtons(doneIds);
+
     document.getElementById('meal-modal').classList.add('open');
 }
 
@@ -169,12 +218,25 @@ async function submitCheckin(uuid, mealType) {
     }
 }
 
-// ── Build meal picker buttons from fetched meal types ─────────────────────────
-function buildMealButtons() {
+// ── Build meal picker buttons — filtered by already-done meals ────────────────
+/**
+ * @param {string[]} doneIds - meal IDs to hide (already checked in)
+ */
+function buildMealButtons(doneIds = []) {
     const grid = document.getElementById('meal-btn-grid');
     grid.innerHTML = '';
 
-    mealTypes.forEach(meal => {
+    const available = mealTypes.filter(m => !doneIds.includes(m.id));
+
+    if (available.length === 0) {
+        const msg = document.createElement('p');
+        msg.className = 'meal-all-done';
+        msg.textContent = '✅ All meals already checked in!';
+        grid.appendChild(msg);
+        return;
+    }
+
+    available.forEach(meal => {
         const btn = document.createElement('button');
         btn.className = `btn meal-pick-btn meal-pick-btn--${meal.color}`;
         btn.id = `meal-btn-${meal.id}`;
@@ -188,16 +250,21 @@ function buildMealButtons() {
 
 // ── Manual entry uses the same meal picker ────────────────────────────────────
 btnManual.addEventListener('click', () => {
-    const uuid = manualInput.value.trim();
-    if (!uuid) return;
+    const raw = manualInput.value.trim();
+    if (!raw) return;
     manualInput.value = '';
 
-    const hacker = hackersCache.find(h => h.uuid === uuid) ?? null;
+    const id     = extractRegistrationId(raw);
+    const rawUrl = raw.startsWith('http') ? raw : null;
+
+    const hacker = hackersCache.find(h => h.uuid === id) ?? null;
     if (!hacker) {
-        showBanner('unknown', '❌ Unknown Hacker', `UUID not found: ${uuid.slice(0, 8)}…`);
+        showBanner('unknown', '❌ Unknown Hacker', `ID not found: ${id}`);
         return;
     }
-    openMealPicker(uuid, hacker.name);
+
+    const doneIds = (hacker.meals ?? []).map(m => m.mealType);
+    openMealPicker(id, hacker.name, doneIds, rawUrl);
 });
 
 manualInput.addEventListener('keydown', e => { if (e.key === 'Enter') btnManual.click(); });
@@ -208,8 +275,7 @@ document.getElementById('meal-modal').addEventListener('click', e => {
 });
 
 // ── Display Helpers ───────────────────────────────────────────────────────────
-function showResult(data, uuid, mealType) {
-    const short    = uuid.slice(0, 8) + '…';
+function showResult(data, id, mealType) {
     const mealMeta = mealTypes.find(m => m.id === mealType);
     const mealLabel = mealMeta ? `${mealMeta.emoji} ${mealMeta.label}` : mealType;
 
@@ -221,7 +287,7 @@ function showResult(data, uuid, mealType) {
         showBanner('duplicate', `⚠️ Already Checked In`,
             `${data.hacker.name} already had ${mealLabel} at ${when}`);
     } else {
-        showBanner('unknown', `❌ Unknown Hacker`, `UUID not found: ${short}`);
+        showBanner('unknown', `❌ Unknown Hacker`, `ID not found: ${id}`);
     }
 }
 
