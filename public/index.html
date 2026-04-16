@@ -36,10 +36,10 @@
     </div>
 
     <!-- Main layout: scanner + feed side by side on wide screens -->
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; align-items: start;">
+    <div class="scanner-layout">
 
       <!-- Scanner card -->
-      <div class="card" style="padding:1.25rem;">
+      <div class="card scanner-card">
         <div class="section-header">
           <h2>Camera</h2>
           <span id="scan-status-pill" class="badge badge-muted">● Idle</span>
@@ -56,24 +56,27 @@
         <canvas id="canvas" style="display:none;"></canvas>
 
         <div class="scanner-controls">
-          <button class="btn btn-primary" id="btn-start">▶ Start Camera</button>
+          <button class="btn btn-primary btn-full-mobile" id="btn-start">▶ Start Camera</button>
           <button class="btn btn-ghost" id="btn-stop" disabled>■ Stop</button>
         </div>
 
+        <!-- Camera error tip -->
+        <div class="camera-tip" id="camera-tip" style="display:none;"></div>
+
         <!-- Manual entry fallback -->
-        <details style="margin-top:1.25rem;">
-          <summary style="cursor:pointer; font-size:0.85rem; color:var(--text-secondary); user-select:none;">
-            ⌨️ Manual UUID entry (fallback)
+        <details class="manual-details">
+          <summary class="manual-summary">
+            ⌨️ Manual ID / URL entry (fallback)
           </summary>
-          <div class="manual-input-wrap" style="margin-top:0.6rem;">
-            <input type="text" id="manual-uuid" placeholder="Paste UUID here…" autocomplete="off" spellcheck="false" />
+          <div class="manual-input-wrap">
+            <input type="text" id="manual-uuid" placeholder="Paste ID or full MLH URL…" autocomplete="off" spellcheck="false" />
             <button class="btn btn-primary" id="btn-manual-checkin">Check In</button>
           </div>
         </details>
       </div>
 
       <!-- Recent check-ins feed -->
-      <div class="card section" style="padding:1.25rem;">
+      <div class="card feed-card">
         <div class="section-header">
           <h2>Recent Check-Ins</h2>
           <span id="checkin-count" class="badge badge-green">0</span>
@@ -87,11 +90,36 @@
         </ul>
       </div>
 
-    </div><!-- /grid -->
+    </div><!-- /scanner-layout -->
   </main>
 
   <!-- Toast container -->
   <div id="toast-container"></div>
+
+  <!-- ── Meal Picker Modal ──────────────────────────────── -->
+  <div class="modal-backdrop" id="meal-modal" role="dialog" aria-modal="true" aria-labelledby="meal-modal-title">
+    <div class="modal meal-modal">
+      <div class="modal-header">
+        <div>
+          <div class="meal-modal-name" id="meal-modal-name"></div>
+          <h2 id="meal-modal-title">Select a Meal</h2>
+        </div>
+        <button class="modal-close" id="meal-modal-close" aria-label="Close">✕</button>
+      </div>
+      <p class="meal-modal-hint">Which meal is this hacker checking in for?</p>
+      <!-- Buttons are injected here by app.js from /api/meal-types -->
+      <div class="meal-btn-grid" id="meal-btn-grid"></div>
+      <!-- Registration link — shown only when a full URL was scanned -->
+      <a id="meal-modal-reg-link"
+         class="btn btn-ghost meal-reg-link"
+         href="#"
+         target="_blank"
+         rel="noopener noreferrer"
+         style="display:none;">
+        🔗 View Registration
+      </a>
+    </div>
+  </div>
 
   <!-- jsQR from CDN (no build step needed) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
