@@ -1,20 +1,23 @@
 /**
  * routes/checkins.js
- * POST /api/checkins — scan a UUID and record a check-in
- * GET  /api/checkins — list all check-in events
+ * POST   /api/checkins       — check in a hacker (updates RSVP_list directly)
+ * GET    /api/checkins       — list all checked-in hackers
+ * DELETE /api/checkins/:uuid — undo a check-in
+ *
+ * No checkinStore — everything goes through hackerStore → RSVP_list.
  */
 
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
 const hackerStore = require('../services/hackerStore');
-const checkinStore = require('../services/checkinStore');
 
 /**
  * POST /api/checkins
  * Body: { uuid: string }
- * Returns: { status: "ok" | "unknown" | "duplicate", hacker?, checkin? }
+ * Returns: { status: "ok" | "unknown" | "duplicate", hacker? }
+ * Response is sent AFTER Supabase confirms the update.
  */
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
     const { uuid } = req.body;
 
     if (!uuid || typeof uuid !== 'string') {
@@ -23,42 +26,72 @@ router.post('/', (req, res) => {
 
     const trimmed = uuid.trim();
 
-    // 1. Look up in known hacker list
-    const hacker = hackerStore.findByUUID(trimmed);
-    if (!hacker) {
-        return res.json({ status: 'unknown', uuid: trimmed });
-    }
+    try {
+        // 1. Look up hacker in RSVP_list
+        const hacker = await hackerStore.findByUUID(trimmed);
+        if (!hacker) {
+            return res.json({ status: 'unknown', uuid: trimmed });
+        }
 
-    // 2. Check for duplicate check-in
-    const existing = checkinStore.findByUUID(trimmed);
-    if (existing) {
-        return res.json({ status: 'duplicate', hacker, checkin: existing });
-    }
+        // 2. Already checked in?
+        if (hacker.checkedIn) {
+            return res.json({
+                status: 'duplicate',
+                hacker,
+                checkin: { uuid: hacker.uuid, name: hacker.name, timestamp: hacker.checkinTime },
+            });
+        }
 
-    // 3. Record check-in
-    const checkin = checkinStore.add({ uuid: trimmed, name: hacker.name });
-    return res.json({ status: 'ok', hacker, checkin });
+        // 3. Mark as checked in — awaits Supabase confirmation
+        const updated = await hackerStore.checkin(trimmed);
+        return res.json({
+            status: 'ok',
+            hacker: updated,
+            checkin: { uuid: updated.uuid, name: updated.name, timestamp: updated.checkinTime },
+        });
+
+    } catch (err) {
+        console.error('[checkins POST]', err);
+        return res.status(500).json({ error: err.message });
+    }
 });
 
 /**
  * GET /api/checkins
- * Returns all check-in events, newest first.
+ * Returns all currently checked-in hackers, newest first.
  */
-router.get('/', (req, res) => {
-    res.json(checkinStore.getAll());
+router.get('/', async (req, res) => {
+    try {
+        const checkedIn = await hackerStore.getAllCheckedIn();
+        // Shape matches what app.js feed expects: { uuid, name, timestamp }
+        res.json(checkedIn.map(h => ({
+            uuid:      h.uuid,
+            name:      h.name,
+            timestamp: h.checkinTime,
+        })));
+    } catch (err) {
+        console.error('[checkins GET]', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 /**
  * DELETE /api/checkins/:uuid
- * Remove a check-in (undo). Returns the removed record or 404.
+ * Undo a check-in. Returns the updated record or 404.
  */
-router.delete('/:uuid', (req, res) => {
+router.delete('/:uuid', async (req, res) => {
     const uuid = req.params.uuid.trim();
-    const removed = checkinStore.removeByUUID(uuid);
-    if (!removed) {
-        return res.status(404).json({ error: 'No check-in found for that UUID' });
+    try {
+        const hacker = await hackerStore.findByUUID(uuid);
+        if (!hacker || !hacker.checkedIn) {
+            return res.status(404).json({ error: 'No check-in found for that UUID' });
+        }
+        const updated = await hackerStore.undoCheckin(uuid);
+        return res.json({ status: 'removed', checkin: { uuid: updated.uuid, name: updated.name } });
+    } catch (err) {
+        console.error('[checkins DELETE]', err);
+        res.status(500).json({ error: err.message });
     }
-    return res.json({ status: 'removed', checkin: removed });
 });
 
 module.exports = router;
