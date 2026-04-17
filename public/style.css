@@ -726,3 +726,128 @@ tbody td {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
 }
+
+/* ── Manual Check-In Search ─────────────────────────────── */
+.manual-checkin-bar {
+  margin-bottom: 0.75rem;
+}
+
+.manual-checkin-bar input {
+  width: 100%;
+  max-width: 480px;
+}
+
+.checkin-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.checkin-result-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s, background 0.15s;
+  animation: feedItemIn 0.2s ease;
+}
+
+.checkin-result-card:not(.checked):hover {
+  border-color: var(--accent-green);
+  background: rgba(34, 211, 165, 0.05);
+}
+
+.checkin-result-card.checked {
+  opacity: 0.65;
+  border-color: var(--border);
+}
+
+.checkin-result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.checkin-result-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkin-result-email {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkin-already-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  flex-shrink: 0;
+}
+
+.checkin-no-results {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* ── Meal Pill Buttons ───────────────────────────────────── */
+.meal-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.btn-meal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--border-bright);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.btn-meal:hover:not(:disabled) {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(34, 211, 165, 0.07);
+  transform: translateY(-1px);
+}
+
+.btn-meal:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-meal--done,
+.btn-meal--done:disabled {
+  background: rgba(34, 211, 165, 0.15);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  cursor: default;
+  opacity: 1;
+}

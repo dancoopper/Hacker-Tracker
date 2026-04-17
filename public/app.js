@@ -16,6 +16,7 @@ const manualInput = document.getElementById('manual-uuid');
 const scanStatusPill = document.getElementById('scan-status-pill');
 const feedList = document.getElementById('feed-list');
 const checkinCount = document.getElementById('checkin-count');
+const supabase = require('./supabaseClient');
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let stream = null;
@@ -77,6 +78,9 @@ async function handleScannedUUID(uuid) {
     scanCooldown = true;
     setScanStatus('processing');
 
+    // Show a waiting banner immediately so the operator knows a request is in flight
+    showBanner('processing', '⏳ Checking in…', 'Waiting for confirmation from server…');
+
     try {
         const res = await fetch(`${API}/api/checkins`, {
             method: 'POST',
@@ -108,6 +112,8 @@ function showResult(data, uuid) {
     } else if (data.status === 'duplicate') {
         const when = new Date(data.checkin.timestamp).toLocaleTimeString();
         showBanner('duplicate', `⚠️ Already Checked In`, `${data.hacker.name} — first checked in at ${when}`);
+    } else if (data.error) {
+        showBanner('unknown', `❌ Server Error`, data.error);
     } else {
         showBanner('unknown', `❌ Unknown Hacker`, `UUID not found: ${short}`);
     }
@@ -116,13 +122,16 @@ function showResult(data, uuid) {
 function showBanner(type, title, sub) {
     const banner = document.getElementById('status-banner');
     document.getElementById('status-icon').textContent =
-        type === 'ok' ? '✅' : type === 'duplicate' ? '⚠️' : '❌';
+        type === 'ok' ? '✅' : type === 'duplicate' ? '⚠️' : type === 'processing' ? '⏳' : '❌';
     document.getElementById('status-title').textContent = title;
     document.getElementById('status-sub').textContent = sub;
-    banner.className = `status-banner visible ${type}`;
+    banner.className = `status-banner visible ${type === 'processing' ? 'duplicate' : type}`;
 
     clearTimeout(banner._hideTimer);
-    banner._hideTimer = setTimeout(() => banner.classList.remove('visible'), 6000);
+    // Don't auto-hide the "processing" banner — it will be replaced by the result
+    if (type !== 'processing') {
+        banner._hideTimer = setTimeout(() => banner.classList.remove('visible'), 6000);
+    }
 }
 
 function setScanStatus(state) {
@@ -205,6 +214,7 @@ manualInput.addEventListener('keydown', e => {
     try {
         const res = await fetch(`${API}/api/checkins`);
         const data = await res.json();
+        // checkinStore returns { uuid, name, timestamp } — all normalized
         data.slice(0, 20).forEach(c => addFeedItem(c.name, c.uuid, c.timestamp));
     } catch (e) {
         console.warn('Could not load existing check-ins', e);

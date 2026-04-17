@@ -42,6 +42,22 @@
             </div>
         </div>
 
+        <!-- Manual Check-In Search -->
+        <div class="section card" id="checkin-search-section">
+            <div class="section-header">
+                <div>
+                    <h2>Manual Check-In</h2>
+                    <p style="font-size:0.85rem;margin-top:0.2rem;">Search by full name or email to find and check in a
+                        hacker.</p>
+                </div>
+            </div>
+            <div class="manual-checkin-bar">
+                <input type="text" id="checkin-search-input" placeholder="🔍  Search by name or email…"
+                    autocomplete="off" />
+            </div>
+            <div id="checkin-results" class="checkin-results" aria-live="polite"></div>
+        </div>
+
         <!-- Hacker List -->
         <div class="section card">
             <div class="section-header">
@@ -67,12 +83,13 @@
                             <th>UUID</th>
                             <th>Status</th>
                             <th>Check-In Time</th>
+                            <th>Meals</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="hacker-tbody">
                         <tr>
-                            <td colspan="5" class="empty-state" style="padding:2rem;">
+                            <td colspan="7" class="empty-state" style="padding:2rem;">
                                 <div class="empty-icon">⏳</div>Loading…
                             </td>
                         </tr>
