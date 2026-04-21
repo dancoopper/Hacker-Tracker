@@ -1,0 +1,5 @@
+[
+  { "id": "breakfast", "label": "Breakfast", "emoji": "🌅", "color": "yellow" },
+  { "id": "lunch",     "label": "Lunch",     "emoji": "🍱", "color": "green"  },
+  { "id": "dinner",    "label": "Dinner",    "emoji": "🌙", "color": "purple" }
+]

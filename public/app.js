@@ -1,6 +1,10 @@
 /**
  * app.js — Scanner page logic
- * Handles camera access, jsQR decoding, and check-in API calls.
+ * Handles camera access, jsQR decoding, meal picker, and check-in API calls.
+ *
+ * QR codes now encode full MLH registration URLs, e.g.:
+ *   https://organize.mlh.io/events/13953-huskyhack-2026/registrations/1036925
+ * The registration ID is the last path segment (7 digits).
  */
 
 const API = '';  // same-origin; change to 'http://localhost:3000' if serving separately
@@ -17,41 +21,85 @@ const scanStatusPill = document.getElementById('scan-status-pill');
 const feedList = document.getElementById('feed-list');
 const checkinCount = document.getElementById('checkin-count');
 const supabase = require('./supabaseClient');
+const feedList = document.getElementById('feed-list');
+const checkinCount = document.getElementById('checkin-count');
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let stream = null;
 let rafId = null;
-let scanCooldown = false;   // brief lock after each scan to prevent double-fires
+let scanCooldown = false;
 let checkinTotal = 0;
+let mealTypes = [];   // loaded from /api/meal-types
+let hackersCache = [];   // loaded from /api/hackers for name lookup
 
 // ── Camera ────────────────────────────────────────────────────────────────────
 async function startCamera() {
+    const cameraTip = document.getElementById('camera-tip');
+    cameraTip.style.display = 'none';
+
+    // Mobile browsers block getUserMedia over plain HTTP (not localhost)
+    const needsHttps = location.protocol !== 'https:'
+        && location.hostname !== 'localhost'
+        && location.hostname !== '127.0.0.1';
+
+    if (needsHttps) {
+        showCameraTip('🔒 Camera blocked — your browser requires <strong>HTTPS</strong> to access the camera on phones. '
+            + 'Open this page over HTTPS (or use localhost from the same device).', 'error');
+        showToast('Camera needs HTTPS on mobile.', 'error');
+        return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showCameraTip('📵 Your browser does not support camera access. Try Chrome or Safari.', 'error');
+        return;
+    }
+
     try {
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 } },
-        });
+        let mediaStream;
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+                audio: false,
+            });
+        } catch (_) {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+
+        stream = mediaStream;
         video.srcObject = stream;
-        video.play();
+        await video.play();
         btnStart.disabled = true;
         btnStop.disabled = false;
         setScanStatus('scanning');
         rafId = requestAnimationFrame(scanFrame);
     } catch (err) {
-        showToast('Camera error: ' + err.message, 'error');
-        console.error(err);
+        let msg = '';
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            msg = '🚫 Camera permission denied. Tap the lock icon in your browser\'s address bar and allow camera access, then try again.';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            msg = '📷 No camera found on this device.';
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            msg = '⚠️ Camera is in use by another app. Close other apps using the camera and try again.';
+        } else if (err.name === 'TypeError') {
+            msg = '🔒 Camera blocked — this page must be served over <strong>HTTPS</strong> for camera access on phones.';
+        } else {
+            msg = `Camera error: ${err.message || err.name}`;
+        }
+        showCameraTip(msg, 'error');
+        showToast('Camera error — see tip below.', 'error');
+        console.error('[camera]', err.name, err.message);
     }
 }
 
 function stopCamera() {
-    if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-    }
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
     video.srcObject = null;
     btnStart.disabled = false;
     btnStop.disabled = true;
     setScanStatus('idle');
+    const cameraTip = document.getElementById('camera-tip');
+    if (cameraTip) cameraTip.style.display = 'none';
 }
 
 // ── QR Scan Loop ──────────────────────────────────────────────────────────────
@@ -64,58 +112,191 @@ function scanFrame() {
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
             inversionAttempts: 'dontInvert',
         });
-
         if (code && !scanCooldown) {
-            handleScannedUUID(code.data.trim());
+            handleScan(code.data.trim());
         }
     }
     if (stream) rafId = requestAnimationFrame(scanFrame);
 }
 
-// ── Check-In Logic ────────────────────────────────────────────────────────────
-async function handleScannedUUID(uuid) {
-    if (!uuid) return;
+// ── URL → Registration ID extractor ─────────────────────────────────────────
+/**
+ * Accepts either a bare registration ID (e.g. "1036925") or a full MLH URL
+ * (e.g. "https://organize.mlh.io/.../registrations/1036925") and returns
+ * just the numeric ID string. Returns the original value unchanged if it
+ * doesn't look like an MLH URL.
+ */
+function extractRegistrationId(raw) {
+    try {
+        // If it looks like a URL, pull the last non-empty path segment
+        if (raw.startsWith('http://') || raw.startsWith('https://')) {
+            const url = new URL(raw);
+            const segments = url.pathname.split('/').filter(Boolean);
+            return segments[segments.length - 1] ?? raw;
+        }
+    } catch (_) { /* not a valid URL — fall through */ }
+    return raw;
+}
+
+// ── Scan Handler — shows meal picker instead of immediately checking in ───────
+function handleScan(rawData) {
+    if (!rawData) return;
     scanCooldown = true;
     setScanStatus('processing');
 
     // Show a waiting banner immediately so the operator knows a request is in flight
     showBanner('processing', '⏳ Checking in…', 'Waiting for confirmation from server…');
 
+    const id = extractRegistrationId(rawData);
+    const rawUrl = rawData.startsWith('http') ? rawData : null;
+
+    // Look up hacker in local cache for instant name display in picker
+    const hacker = hackersCache.find(h => h.uuid === id) ?? null;
+
+    if (!hacker) {
+        showBanner('unknown', '❌ Unknown Hacker', `ID not found: ${id}`);
+        setTimeout(() => { scanCooldown = false; setScanStatus(stream ? 'scanning' : 'idle'); }, 3000);
+        return;
+    }
+
+    // Meals already completed by this hacker (from cache)
+    const doneIds = (hacker.meals ?? []).map(m => m.mealType);
+    openMealPicker(id, hacker.name, doneIds, rawUrl);
+}
+
+// ── Meal Picker ───────────────────────────────────────────────────────────────
+let pendingUUID = null;
+let pendingRawUrl = null;   // original scanned URL (for the "View Registration" link)
+
+/**
+ * @param {string} uuid        - registration ID
+ * @param {string} name        - hacker display name
+ * @param {string[]} doneIds   - meal IDs already checked in for this hacker
+ * @param {string|null} rawUrl - original QR URL (null if entered manually without URL)
+ */
+function openMealPicker(uuid, name, doneIds = [], rawUrl = null) {
+    pendingUUID = uuid;
+    pendingRawUrl = rawUrl;
+    document.getElementById('meal-modal-name').textContent = name;
+
+    // Wire (or update) the registration link button
+    const regLink = document.getElementById('meal-modal-reg-link');
+    if (rawUrl && rawUrl.startsWith('http')) {
+        regLink.href = rawUrl;
+        regLink.style.display = '';
+    } else {
+        regLink.style.display = 'none';
+    }
+
+    // Rebuild meal buttons filtering out already-done meals
+    buildMealButtons(doneIds);
+
+    document.getElementById('meal-modal').classList.add('open');
+}
+
+function closeMealPicker() {
+    document.getElementById('meal-modal').classList.remove('open');
+    pendingUUID = null;
+    // Resume scanning after modal close
+    setTimeout(() => {
+        scanCooldown = false;
+        setScanStatus(stream ? 'scanning' : 'idle');
+    }, 500);
+}
+
+async function submitCheckin(uuid, mealType) {
+    closeMealPicker();
     try {
         const res = await fetch(`${API}/api/checkins`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uuid }),
+            body: JSON.stringify({ uuid, mealType }),
         });
         const data = await res.json();
-        showResult(data, uuid);
+        showResult(data, uuid, mealType);
         if (data.status === 'ok') {
-            addFeedItem(data.hacker.name, uuid, data.checkin.timestamp);
+            addFeedItem(data.hacker.name, uuid, data.checkin.timestamp, mealType);
+            // Refresh hacker cache so meal badges update
+            loadHackersCache();
         }
     } catch (err) {
         showBanner('unknown', '⚠️ Network Error', err.message);
     }
-
-    // cooldown: ignore further scans for 3 seconds
-    setTimeout(() => {
-        scanCooldown = false;
-        setScanStatus(stream ? 'scanning' : 'idle');
-    }, 3000);
 }
 
+// ── Build meal picker buttons — filtered by already-done meals ────────────────
+/**
+ * @param {string[]} doneIds - meal IDs to hide (already checked in)
+ */
+function buildMealButtons(doneIds = []) {
+    const grid = document.getElementById('meal-btn-grid');
+    grid.innerHTML = '';
+
+    const available = mealTypes.filter(m => !doneIds.includes(m.id));
+
+    if (available.length === 0) {
+        const msg = document.createElement('p');
+        msg.className = 'meal-all-done';
+        msg.textContent = '✅ All meals already checked in!';
+        grid.appendChild(msg);
+        return;
+    }
+
+    available.forEach(meal => {
+        const btn = document.createElement('button');
+        btn.className = `btn meal-pick-btn meal-pick-btn--${meal.color}`;
+        btn.id = `meal-btn-${meal.id}`;
+        btn.innerHTML = `<span class="meal-pick-emoji">${meal.emoji}</span>${meal.label}`;
+        btn.addEventListener('click', () => {
+            if (pendingUUID) submitCheckin(pendingUUID, meal.id);
+        });
+        grid.appendChild(btn);
+    });
+}
+
+// ── Manual entry uses the same meal picker ────────────────────────────────────
+btnManual.addEventListener('click', () => {
+    const raw = manualInput.value.trim();
+    if (!raw) return;
+    manualInput.value = '';
+
+    const id = extractRegistrationId(raw);
+    const rawUrl = raw.startsWith('http') ? raw : null;
+
+    const hacker = hackersCache.find(h => h.uuid === id) ?? null;
+    if (!hacker) {
+        showBanner('unknown', '❌ Unknown Hacker', `ID not found: ${id}`);
+        return;
+    }
+
+    const doneIds = (hacker.meals ?? []).map(m => m.mealType);
+    openMealPicker(id, hacker.name, doneIds, rawUrl);
+});
+
+manualInput.addEventListener('keydown', e => { if (e.key === 'Enter') btnManual.click(); });
+
+document.getElementById('meal-modal-close').addEventListener('click', closeMealPicker);
+document.getElementById('meal-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('meal-modal')) closeMealPicker();
+});
+
 // ── Display Helpers ───────────────────────────────────────────────────────────
-function showResult(data, uuid) {
-    const short = uuid.slice(0, 8) + '…';
+function showResult(data, id, mealType) {
+    const mealMeta = mealTypes.find(m => m.id === mealType);
+    const mealLabel = mealMeta ? `${mealMeta.emoji} ${mealMeta.label}` : mealType;
+
     if (data.status === 'ok') {
-        showBanner('ok', `✅ Welcome, ${data.hacker.name}!`, `UUID: ${short}`);
-        showToast(`Checked in: ${data.hacker.name}`, 'success');
+        showBanner('ok', `✅ Welcome, ${data.hacker.name}!`, `${mealLabel} check-in recorded`);
+        showToast(`Checked in: ${data.hacker.name} — ${mealLabel}`, 'success');
     } else if (data.status === 'duplicate') {
         const when = new Date(data.checkin.timestamp).toLocaleTimeString();
+        showBanner('duplicate', `⚠️ Already Checked In`,
+            `${data.hacker.name} already had ${mealLabel} at ${when}`);
         showBanner('duplicate', `⚠️ Already Checked In`, `${data.hacker.name} — first checked in at ${when}`);
     } else if (data.error) {
         showBanner('unknown', `❌ Server Error`, data.error);
     } else {
-        showBanner('unknown', `❌ Unknown Hacker`, `UUID not found: ${short}`);
+        showBanner('unknown', `❌ Unknown Hacker`, `ID not found: ${id}`);
     }
 }
 
@@ -123,10 +304,14 @@ function showBanner(type, title, sub) {
     const banner = document.getElementById('status-banner');
     document.getElementById('status-icon').textContent =
         type === 'ok' ? '✅' : type === 'duplicate' ? '⚠️' : type === 'processing' ? '⏳' : '❌';
+    document.getElementById('status-icon').textContent =
+        type === 'ok' ? '✅' : type === 'duplicate' ? '⚠️' : '❌';
     document.getElementById('status-title').textContent = title;
     document.getElementById('status-sub').textContent = sub;
     banner.className = `status-banner visible ${type === 'processing' ? 'duplicate' : type}`;
 
+    document.getElementById('status-sub').textContent = sub;
+    banner.className = `status-banner visible ${type}`;
     clearTimeout(banner._hideTimer);
     // Don't auto-hide the "processing" banner — it will be replaced by the result
     if (type !== 'processing') {
@@ -152,28 +337,31 @@ function setScanStatus(state) {
     }
 }
 
-function addFeedItem(name, uuid, timestamp) {
+function addFeedItem(name, uuid, timestamp, mealType) {
     checkinTotal++;
     checkinCount.textContent = checkinTotal;
 
-    // Remove empty state placeholder
     const empty = feedList.querySelector('.empty-state');
     if (empty) feedList.innerHTML = '';
 
+    const mealMeta = mealTypes.find(m => m.id === mealType);
+    const mealLabel = mealMeta ? `${mealMeta.emoji} ${mealMeta.label}` : (mealType || '');
     const time = new Date(timestamp).toLocaleTimeString();
+
     const li = document.createElement('li');
     li.className = 'feed-item';
     li.innerHTML = `
-    <div class="feed-dot"></div>
-    <div style="flex:1; min-width:0;">
-      <div class="feed-name">${escHtml(name)}</div>
-      <div class="feed-uuid mono">${escHtml(uuid)}</div>
-    </div>
-    <div class="feed-meta">${time}</div>
-  `;
+      <div class="feed-dot"></div>
+      <div style="flex:1; min-width:0;">
+        <div class="feed-name">${escHtml(name)}</div>
+        <div class="feed-uuid mono">${escHtml(uuid)}</div>
+      </div>
+      <div style="text-align:right;">
+        ${mealLabel ? `<div class="feed-meal">${escHtml(mealLabel)}</div>` : ''}
+        <div class="feed-meta">${time}</div>
+      </div>
+    `;
     feedList.insertBefore(li, feedList.firstChild);
-
-    // Keep feed at most 20 items
     while (feedList.children.length > 20) feedList.removeChild(feedList.lastChild);
 }
 
@@ -194,28 +382,51 @@ function escHtml(str) {
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ── Event Listeners ───────────────────────────────────────────────────────────
+function showCameraTip(htmlMsg, type = '') {
+    const el = document.getElementById('camera-tip');
+    if (!el) return;
+    el.innerHTML = htmlMsg;
+    el.style.display = 'block';
+    el.className = `camera-tip camera-tip--${type}`;
+}
+
+// ── Camera controls ───────────────────────────────────────────────────────────
 btnStart.addEventListener('click', startCamera);
 btnStop.addEventListener('click', stopCamera);
 
-btnManual.addEventListener('click', () => {
-    const uuid = manualInput.value.trim();
-    if (!uuid) return;
-    manualInput.value = '';
-    handleScannedUUID(uuid);
-});
+// ── Data helpers ──────────────────────────────────────────────────────────────
+async function loadHackersCache() {
+    try {
+        const res = await fetch(`${API}/api/hackers`);
+        hackersCache = await res.json();
+    } catch (e) {
+        console.warn('Could not load hackers cache', e);
+    }
+}
 
-manualInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') btnManual.click();
-});
-
-// ── Bootstrap: load existing check-ins into the feed ─────────────────────────
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
 (async function init() {
+    // Load meal types first so buttons render before any scan arrives
+    try {
+        const res = await fetch(`${API}/api/meal-types`);
+        mealTypes = await res.json();
+        buildMealButtons();
+    } catch (e) {
+        console.warn('Could not load meal types', e);
+    }
+
+    // Cache hacker list for instant name lookup on scan
+    await loadHackersCache();
+
+    // Populate recent check-ins feed
     try {
         const res = await fetch(`${API}/api/checkins`);
         const data = await res.json();
         // checkinStore returns { uuid, name, timestamp } — all normalized
         data.slice(0, 20).forEach(c => addFeedItem(c.name, c.uuid, c.timestamp));
+        data.slice(0, 20).forEach(c =>
+            addFeedItem(c.name, c.uuid, c.timestamp, c.mealType)
+        );
     } catch (e) {
         console.warn('Could not load existing check-ins', e);
     }

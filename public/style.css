@@ -700,19 +700,56 @@ tbody td {
   border-color: var(--accent-red);
 }
 
-/* ── Responsive ─────────────────────────────────────────── */
-@media (max-width: 600px) {
-  h1 {
-    font-size: 1.35rem;
-  }
+/* ── Scanner Layout (2-col on desktop, 1-col on mobile) ──── */
+.scanner-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
 
-  .scanner-wrap {
-    max-width: 100%;
-  }
+.scanner-card,
+.feed-card {
+  padding: 1.25rem;
+}
 
-  .stats-row {
-    gap: 0.5rem;
-  }
+/* ── Camera Tip Panel ───────────────────────────────────── */
+.camera-tip {
+  margin-top: 0.85rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+.camera-tip--error {
+  background: rgba(247, 85, 79, 0.1);
+  border-color: rgba(247, 85, 79, 0.35);
+  color: #fca5a2;
+}
+
+.camera-tip--error strong {
+  color: #fff;
+}
+
+.camera-tip--info {
+  background: rgba(79, 142, 247, 0.1);
+  border-color: rgba(79, 142, 247, 0.35);
+  color: var(--accent-blue);
+}
+
+/* ── Manual Entry Details ───────────────────────────────── */
+.manual-details {
+  margin-top: 1.25rem;
+}
+
+.manual-summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  user-select: none;
+  padding: 0.25rem 0;
 }
 
 /* ── Empty state ─────────────────────────────────────────── */
@@ -725,6 +762,377 @@ tbody td {
 .empty-state .empty-icon {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
+}
+
+/* ── Mobile Responsive ──────────────────────────────────── */
+@media (max-width: 700px) {
+
+  /* Container */
+  .page-container {
+    padding: 0 1rem 3rem;
+  }
+
+  /* Hero */
+  .page-hero {
+    padding: 1.5rem 0 1rem;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  /* Stack scanner + feed vertically */
+  .scanner-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Full-width scanner */
+  .scanner-wrap {
+    max-width: 100%;
+  }
+
+  /* Bigger touch targets */
+  .btn {
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+
+  /* Start Camera fills its row */
+  .btn-full-mobile {
+    flex: 1;
+  }
+
+  /* Section header: wrap on narrow screens */
+  .section-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .section-header>div {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  /* Stats pills */
+  .stats-row {
+    gap: 0.5rem;
+  }
+
+  .stat-pill {
+    padding: 0.75rem 0.5rem;
+    min-width: 0;
+  }
+
+  .stat-pill .pill-value {
+    font-size: 1.5rem;
+  }
+
+  /* Admin search full-width */
+  #search-input {
+    max-width: 100% !important;
+  }
+
+  /* Manual entry stacks vertically on phones */
+  .manual-input-wrap {
+    flex-direction: column;
+  }
+
+  .manual-input-wrap .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Toast repositioned to bottom-center */
+  #toast-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    align-items: stretch;
+  }
+
+  .toast {
+    text-align: center;
+  }
+
+  /* Modal: slide up from bottom on phones */
+  .modal-backdrop {
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 1.5rem 1.25rem;
+    animation: modalInMobile 0.25s ease;
+  }
+
+  @keyframes modalInMobile {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Admin table scroll */
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    font-size: 0.82rem;
+  }
+
+  thead th,
+  tbody td {
+    padding: 0.55rem 0.65rem;
+  }
+
+  /* Status banner compact */
+  .status-banner.visible {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  /* Scanner controls row */
+  .scanner-controls {
+    gap: 0.5rem;
+  }
+}
+
+/* ── Meal Picker Modal ───────────────────────────────────── */
+.meal-modal {
+  max-width: 480px;
+}
+
+.meal-modal-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.15rem;
+}
+
+.meal-modal-hint {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+  margin-top: -0.5rem;
+}
+
+/* Grid of big tappable meal buttons */
+.meal-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.meal-pick-btn {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1.1rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
+}
+
+.meal-pick-btn:hover {
+  transform: translateY(-3px);
+  opacity: 1;
+}
+
+.meal-pick-emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+/* Color variants — mapped to mealTypes.json "color" field */
+.meal-pick-btn--yellow {
+  background: rgba(245, 200, 66, 0.12);
+  border-color: rgba(245, 200, 66, 0.45);
+  color: var(--accent-yellow);
+  box-shadow: 0 0 16px rgba(245, 200, 66, 0.08);
+}
+
+.meal-pick-btn--yellow:hover {
+  background: rgba(245, 200, 66, 0.2);
+  box-shadow: 0 0 24px rgba(245, 200, 66, 0.2);
+}
+
+.meal-pick-btn--green {
+  background: rgba(34, 211, 165, 0.1);
+  border-color: rgba(34, 211, 165, 0.4);
+  color: var(--accent-green);
+  box-shadow: 0 0 16px rgba(34, 211, 165, 0.08);
+}
+
+.meal-pick-btn--green:hover {
+  background: rgba(34, 211, 165, 0.18);
+  box-shadow: 0 0 24px rgba(34, 211, 165, 0.2);
+}
+
+.meal-pick-btn--purple {
+  background: rgba(167, 139, 250, 0.1);
+  border-color: rgba(167, 139, 250, 0.4);
+  color: var(--accent-purple);
+  box-shadow: 0 0 16px rgba(167, 139, 250, 0.08);
+}
+
+.meal-pick-btn--purple:hover {
+  background: rgba(167, 139, 250, 0.2);
+  box-shadow: 0 0 24px rgba(167, 139, 250, 0.2);
+}
+
+.meal-pick-btn--blue {
+  background: rgba(79, 142, 247, 0.1);
+  border-color: rgba(79, 142, 247, 0.4);
+  color: var(--accent-blue);
+}
+
+.meal-pick-btn--red {
+  background: rgba(247, 85, 79, 0.1);
+  border-color: rgba(247, 85, 79, 0.4);
+  color: var(--accent-red);
+}
+
+/* ── Feed meal label ─────────────────────────────────────── */
+.feed-meal {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-green);
+  margin-bottom: 0.1rem;
+}
+
+/* ── Admin table meal chips ──────────────────────────────── */
+.meal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.meal-chip--empty {
+  color: var(--text-muted);
+}
+
+.meal-chip--yellow {
+  background: rgba(245, 200, 66, 0.12);
+  border-color: rgba(245, 200, 66, 0.35);
+  color: var(--accent-yellow);
+}
+
+.meal-chip--green {
+  background: rgba(34, 211, 165, 0.12);
+  border-color: rgba(34, 211, 165, 0.35);
+  color: var(--accent-green);
+}
+
+.meal-chip--purple {
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.35);
+  color: var(--accent-purple);
+}
+
+.meal-chip--blue {
+  background: rgba(79, 142, 247, 0.12);
+  border-color: rgba(79, 142, 247, 0.35);
+  color: var(--accent-blue);
+}
+
+.meal-chip--red {
+  background: rgba(247, 85, 79, 0.12);
+  border-color: rgba(247, 85, 79, 0.35);
+  color: var(--accent-red);
+}
+
+.meal-chip-time {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.meal-chip-undo {
+  cursor: pointer;
+  opacity: 0;
+  font-size: 0.7rem;
+  padding: 0 0.1rem;
+  margin-left: 0.1rem;
+  transition: opacity 0.15s;
+}
+
+.meal-chip:hover .meal-chip-undo {
+  opacity: 1;
+}
+
+/* Always show undo on touch devices */
+@media (hover: none) {
+  .meal-chip-undo {
+    opacity: 0.7;
+  }
+}
+
+/* ── All-meals-done message ──────────────────────────────── */
+.meal-all-done {
+  text-align: center;
+  padding: 1.5rem 0 0.5rem;
+  color: var(--accent-green);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* ── Registration link button (bottom of meal modal) ─────── */
+.meal-reg-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+  width: 100%;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-color: var(--border);
+  text-decoration: none;
+}
+
+.meal-reg-link:hover {
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+/* ── Meal picker mobile adjustments ─────────────────────── */
+@media (max-width: 700px) {
+  .meal-modal {
+    max-width: 100%;
+  }
+
+  .meal-btn-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-pick-btn {
+    flex-direction: row;
+    padding: 1rem 1.25rem;
+    font-size: 1.05rem;
+  }
+
+  .meal-pick-emoji {
+    font-size: 1.5rem;
+  }
 }
 
 /* ── Manual Check-In Search ─────────────────────────────── */
