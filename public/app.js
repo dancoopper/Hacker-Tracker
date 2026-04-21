@@ -20,9 +20,7 @@ const manualInput = document.getElementById('manual-uuid');
 const scanStatusPill = document.getElementById('scan-status-pill');
 const feedList = document.getElementById('feed-list');
 const checkinCount = document.getElementById('checkin-count');
-const supabase = require('./supabaseClient');
-const feedList = document.getElementById('feed-list');
-const checkinCount = document.getElementById('checkin-count');
+// const supabase = require('./supabaseClient');
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let stream = null;

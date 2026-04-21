@@ -13,7 +13,6 @@ const path = require('path');
 const checkinsRouter = require('./routes/checkins');
 const hackersRouter = require('./routes/hackers');
 const mealTypesRouter = require('./routes/mealTypes');
-const hackersRouter = require('./routes/hackers');
 const mealsRouter = require('./routes/meals');
 
 const app = express();
@@ -27,8 +26,6 @@ app.use(express.json());
 app.use('/api/checkins', checkinsRouter);
 app.use('/api/hackers', hackersRouter);
 app.use('/api/meal-types', mealTypesRouter);
-app.use('/api/checkins', checkinsRouter);
-app.use('/api/hackers', hackersRouter);
 app.use('/api/meals', mealsRouter);
 
 // ── Static Frontend ──────────────────────────────────────────────────────────
