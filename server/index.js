@@ -10,9 +10,10 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-const checkinsRouter = require('./routes/checkins');
-const hackersRouter = require('./routes/hackers');
-const mealsRouter   = require('./routes/meals');
+const checkinsRouter  = require('./routes/checkins');
+const hackersRouter   = require('./routes/hackers');
+const mealsRouter     = require('./routes/meals');
+const qrMealsRouter   = require('./routes/qrmeals');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,8 +24,9 @@ app.use(express.json());
 
 // ── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/checkins', checkinsRouter);
-app.use('/api/hackers', hackersRouter);
-app.use('/api/meals',   mealsRouter);
+app.use('/api/hackers',  hackersRouter);
+app.use('/api/meals',    mealsRouter);
+app.use('/api/qrmeals',  qrMealsRouter);
 
 // ── Static Frontend ──────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '../public')));

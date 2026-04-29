@@ -30,7 +30,6 @@ async function getAll() {
     const { data, error } = await supabase
         .from('RSVP_list')
         .select('*');
-    console.log(await supabase.from('RSVP_list').select('*'));
     if (error) throw new Error('hackerStore.getAll: ' + error.message);
     return (data ?? []).map(normalize);
 }

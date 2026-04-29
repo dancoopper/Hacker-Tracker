@@ -22,74 +22,51 @@
 
     <main class="page-container">
         <div class="page-hero">
-            <h1>Admin Dashboard</h1>
-            <p>Manage attendees, view check-in stats, and export data.</p>
+            <h1>Meal Admin</h1>
+            <p>Track meal totals and manually adjust QR code meal counts.</p>
         </div>
 
-        <!-- Stats row -->
-        <div class="stats-row" id="stats-row">
-            <div class="stat-pill blue">
-                <div class="pill-value" id="stat-total">—</div>
-                <div class="pill-label">Registered</div>
+
+        <!-- Meal totals -->
+        <div class="stats-row" style="margin-bottom:1.5rem;">
+            <div class="stat-pill" style="border-color:rgba(245,200,66,0.3);">
+                <div class="pill-value" id="stat-breakfast" style="color:var(--accent-yellow);">—</div>
+                <div class="pill-label">🍳 Breakfasts</div>
             </div>
-            <div class="stat-pill green">
-                <div class="pill-value" id="stat-checkedin">—</div>
-                <div class="pill-label">Checked In</div>
+            <div class="stat-pill" style="border-color:rgba(34,211,165,0.3);">
+                <div class="pill-value" id="stat-lunch" style="color:var(--accent-green);">—</div>
+                <div class="pill-label">🥗 Lunches</div>
             </div>
-            <div class="stat-pill yellow">
-                <div class="pill-value" id="stat-remaining">—</div>
-                <div class="pill-label">Not Yet Here</div>
+            <div class="stat-pill" style="border-color:rgba(167,139,250,0.3);">
+                <div class="pill-value" id="stat-dinner" style="color:var(--accent-purple);">—</div>
+                <div class="pill-label">🍽 Dinners</div>
             </div>
         </div>
 
-        <!-- Manual Check-In Search -->
-        <div class="section card" id="checkin-search-section">
+        <!-- QR Meal Tracker -->
+        <div class="section card" id="qr-meals-section">
             <div class="section-header">
                 <div>
-                    <h2>Manual Check-In</h2>
-                    <p style="font-size:0.85rem;margin-top:0.2rem;">Search by full name or email to find and check in a
-                        hacker.</p>
+                    <h2>🍽 QR Meal Tracker</h2>
+                    <p style="font-size:0.85rem;margin-top:0.2rem;">All QR codes that have been scanned for meals. Use
+                        +/− to manually adjust counts.</p>
                 </div>
+                <button class="btn btn-ghost" id="btn-refresh-qr" style="white-space:nowrap;">↺ Refresh</button>
             </div>
-            <div class="manual-checkin-bar">
-                <input type="text" id="checkin-search-input" placeholder="🔍  Search by name or email…"
-                    autocomplete="off" />
-            </div>
-            <div id="checkin-results" class="checkin-results" aria-live="polite"></div>
-        </div>
-
-        <!-- Hacker List -->
-        <div class="section card">
-            <div class="section-header">
-                <h2>Attendees</h2>
-                <div style="display:flex;gap:0.5rem;">
-                    <button class="btn btn-ghost" id="btn-export-csv">⬇ Export CSV</button>
-                    <button class="btn btn-primary" id="btn-open-add">+ Add Hacker</button>
-                </div>
-            </div>
-
-            <!-- Search -->
-            <div style="margin-bottom:1rem;">
-                <input type="text" id="search-input" placeholder="🔍  Search by name, email, or UUID…"
-                    style="max-width:400px;" />
-            </div>
-
             <div class="table-wrap">
-                <table id="hacker-table">
+                <table id="qr-meals-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>UUID</th>
-                            <th>Status</th>
-                            <th>Check-In Time</th>
-                            <th>Meals</th>
-                            <th>Actions</th>
+                            <th>QR Code</th>
+                            <th style="text-align:center;">🍳 Breakfast</th>
+                            <th style="text-align:center;">🥗 Lunch</th>
+                            <th style="text-align:center;">🍽 Dinner</th>
+                            <th>Last Updated</th>
                         </tr>
                     </thead>
-                    <tbody id="hacker-tbody">
+                    <tbody id="qr-meals-tbody">
                         <tr>
-                            <td colspan="7" class="empty-state" style="padding:2rem;">
+                            <td colspan="5" class="empty-state" style="padding:2rem;">
                                 <div class="empty-icon">⏳</div>Loading…
                             </td>
                         </tr>
@@ -98,38 +75,9 @@
             </div>
         </div>
 
+
     </main>
 
-    <!-- ── Add Hacker Modal ───────────────────────────────── -->
-    <div class="modal-backdrop" id="add-modal">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-            <div class="modal-header">
-                <h2 id="modal-title">Add Hacker</h2>
-                <button class="modal-close" id="btn-close-modal" aria-label="Close">✕</button>
-            </div>
-
-            <form id="add-hacker-form">
-                <div class="form-group">
-                    <label for="input-name">Name *</label>
-                    <input type="text" id="input-name" required placeholder="Full name" autocomplete="off" />
-                </div>
-                <div class="form-group">
-                    <label for="input-email">Email</label>
-                    <input type="email" id="input-email" placeholder="hacker@example.com" autocomplete="off" />
-                </div>
-                <div class="form-group">
-                    <label for="input-uuid">UUID <span style="color:var(--text-muted);font-weight:400;">(auto-generated
-                            if blank)</span></label>
-                    <input type="text" id="input-uuid" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                        autocomplete="off" spellcheck="false" />
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-ghost" id="btn-cancel-add">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="btn-submit-add">Add Hacker</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- Toast container -->
     <div id="toast-container"></div>

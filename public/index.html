@@ -22,8 +22,8 @@
 
   <main class="page-container">
     <div class="page-hero">
-      <h1>Check-In Scanner</h1>
-      <p>Point a hacker's QR code at the camera to check them in.</p>
+      <h1>Meal Scanner</h1>
+      <p>Scan a QR code, then select which meal to record.</p>
     </div>
 
     <!-- Status Banner -->
@@ -36,10 +36,10 @@
     </div>
 
     <!-- Main layout: scanner + feed side by side on wide screens -->
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; align-items: start;">
+    <div class="scanner-layout">
 
       <!-- Scanner card -->
-      <div class="card" style="padding:1.25rem;">
+      <div class="card scanner-card">
         <div class="section-header">
           <h2>Camera</h2>
           <span id="scan-status-pill" class="badge badge-muted">● Idle</span>
@@ -63,19 +63,19 @@
         <!-- Manual entry fallback -->
         <details style="margin-top:1.25rem;">
           <summary style="cursor:pointer; font-size:0.85rem; color:var(--text-secondary); user-select:none;">
-            ⌨️ Manual UUID entry (fallback)
+            ⌨️ Manual code entry (fallback)
           </summary>
           <div class="manual-input-wrap" style="margin-top:0.6rem;">
-            <input type="text" id="manual-uuid" placeholder="Paste UUID here…" autocomplete="off" spellcheck="false" />
-            <button class="btn btn-primary" id="btn-manual-checkin">Check In</button>
+            <input type="text" id="manual-uuid" placeholder="Paste QR code here…" autocomplete="off" spellcheck="false" />
+            <button class="btn btn-primary" id="btn-manual-checkin">Scan Code</button>
           </div>
         </details>
       </div>
 
       <!-- Recent check-ins feed -->
-      <div class="card section" style="padding:1.25rem;">
+      <div class="card section feed-card">
         <div class="section-header">
-          <h2>Recent Check-Ins</h2>
+          <h2>Recent Meals</h2>
           <span id="checkin-count" class="badge badge-green">0</span>
         </div>
 
@@ -87,11 +87,26 @@
         </ul>
       </div>
 
-    </div><!-- /grid -->
+    </div><!-- /scanner-layout -->
   </main>
 
   <!-- Toast container -->
   <div id="toast-container"></div>
+
+  <!-- Meal Selection Modal -->
+  <div id="meal-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="meal-modal-title">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <h3 id="meal-modal-title">🍽 Meal Manager</h3>
+        <button class="modal-close" id="btn-close-meal-modal" aria-label="Cancel">✕</button>
+      </div>
+      <p id="meal-modal-code" style="color:var(--text-muted);font-size:0.78rem;font-family:monospace;margin-bottom:1rem;word-break:break-all;"></p>
+      <div id="meal-modal-body" style="display:flex;flex-direction:column;gap:0.6rem;">
+        <!-- Rendered dynamically by app.js -->
+        <div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading…</div>
+      </div>
+    </div>
+  </div>
 
   <!-- jsQR from CDN (no build step needed) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>

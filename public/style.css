@@ -700,20 +700,143 @@ tbody td {
   border-color: var(--accent-red);
 }
 
+/* ── Scanner Layout ─────────────────────────────────────── */
+.scanner-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.scanner-card,
+.feed-card {
+  padding: 1.25rem;
+}
+
 /* ── Responsive ─────────────────────────────────────────── */
-@media (max-width: 600px) {
-  h1 {
-    font-size: 1.35rem;
+
+/* Tablet — collapse to single column */
+@media (max-width: 700px) {
+  .scanner-layout {
+    grid-template-columns: 1fr;
   }
 
+  .feed-card {
+    /* On mobile the feed sits below the scanner — cap height so it doesn't push too far */
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+}
+
+/* Phone */
+@media (max-width: 480px) {
+  /* Tighten overall container */
+  .page-container {
+    padding: 0 0.75rem 3rem;
+  }
+
+  /* Smaller hero */
+  .page-hero {
+    padding: 1.25rem 0 1rem;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  /* Scanner fills full width */
   .scanner-wrap {
     max-width: 100%;
   }
 
+  /* Start/Stop buttons fill the row */
+  .scanner-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scanner-controls .btn {
+    justify-content: center;
+  }
+
+  /* Status banner compact */
+  .status-banner.visible {
+    padding: 0.9rem 1rem;
+    gap: 0.6rem;
+  }
+
+  .status-banner .status-icon {
+    font-size: 1.5rem;
+  }
+
+  .status-banner .status-title {
+    font-size: 0.95rem;
+  }
+
+  /* Card padding */
+  .card {
+    padding: 1rem;
+  }
+
+  .scanner-card,
+  .feed-card {
+    padding: 1rem;
+  }
+
+  /* Modal slides up from bottom on phones */
+  .modal-backdrop {
+    align-items: flex-end;
+  }
+
+  .modal {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-width: 100% !important;
+    width: 100%;
+    padding: 1.5rem 1.25rem 2rem;  /* extra bottom padding for safe area */
+  }
+
+  /* Bigger tap targets in modal */
+  #meal-modal-body .btn {
+    padding: 1rem 1.1rem;
+    font-size: 1rem;
+  }
+
+  /* Stats row wraps to 2-col grid */
   .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
   }
+
+  .stat-pill {
+    min-width: 0;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .stat-pill .pill-value {
+    font-size: 1.5rem;
+  }
+
+  /* Toast sticks to bottom-center on mobile */
+  #toast-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    align-items: stretch;
+  }
+
+  .toast {
+    text-align: center;
+  }
+
+  /* Section header on mobile — wrap if needed */
+  .section-header {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
 }
+
 
 /* ── Empty state ─────────────────────────────────────────── */
 .empty-state {
